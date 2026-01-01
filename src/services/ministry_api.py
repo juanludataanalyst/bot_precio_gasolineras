@@ -11,7 +11,7 @@ class MinistryAPIClient:
     async def get_all_stations(self) -> List[FuelStation]:
         """Fetch all fuel stations from the Ministry API"""
         if self._http_client is None:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(MINISTRY_API_URL)
                 response.raise_for_status()
                 data = response.json()
