@@ -33,7 +33,7 @@ def test_main_creates_application():
         mock_builder.token.assert_called_once()
 
         # Verify handlers were added
-        assert mock_application.add_handler.call_count == 4  # 3 commands + 1 conversation
+        assert mock_application.add_handler.call_count == 2  # 1 conversation + 1 help command
 
         # Verify bot started
         mock_logger.info.assert_called_with("Starting bot...")

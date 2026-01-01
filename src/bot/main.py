@@ -17,12 +17,7 @@ def main() -> None:
     # Create the Application
     application = Application.builder().token(TOKEN).build()
 
-    # Add command handlers
-    application.add_handler(CommandHandler("start", handlers.start_command))
-    application.add_handler(CommandHandler("help", handlers.help_command))
-    application.add_handler(CommandHandler("cancel", handlers.cancel_command))
-
-    # Add conversation handler
+    # Add conversation handler (includes /start as entry_point)
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", handlers.start_command)],
         states={
@@ -40,6 +35,9 @@ def main() -> None:
     )
 
     application.add_handler(conv_handler)
+
+    # Add other command handlers (help, cancel)
+    application.add_handler(CommandHandler("help", handlers.help_command))
 
     # Start the bot
     logger.info("Starting bot...")
