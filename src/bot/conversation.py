@@ -1,3 +1,4 @@
+import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -5,11 +6,14 @@ from src.models import FuelType
 from src.services.ministry_api import MinistryAPIClient
 from src.services.finder import FuelStationFinder
 
+logger = logging.getLogger(__name__)
+
 # Conversation states
 LOCATION, FUEL_TYPE, RADIUS = range(3)
 
 async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle user's location and ask for fuel type"""
+    logger.info(f"📍 location_handler called! Update: {update}")
     user_location = update.message.location
 
     context.user_data['latitude'] = user_location.latitude

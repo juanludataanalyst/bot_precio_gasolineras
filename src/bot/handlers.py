@@ -1,5 +1,6 @@
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
+from src.bot import conversation
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation and ask for location"""
@@ -10,7 +11,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         "📍 Pulsa el clip 📎 y selecciona 'Ubicación' o usa el botón de ubicación.",
         reply_markup=get_location_keyboard()
     )
-    return 1
+    return conversation.LOCATION
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send help message"""
@@ -34,7 +35,7 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "❌ Búsqueda cancelada. Pulsa /start para comenzar de nuevo."
     )
     context.user_data.clear()
-    return -1
+    return ConversationHandler.END
 
 def get_location_keyboard():
     """Create keyboard with location button"""

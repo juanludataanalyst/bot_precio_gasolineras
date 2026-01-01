@@ -1,7 +1,11 @@
 import logging
+import os
+from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
 from src.bot import handlers, conversation
+
+load_dotenv()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -9,7 +13,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-import os
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 
 def main() -> None:
@@ -32,9 +35,16 @@ def main() -> None:
             ],
         },
         fallbacks=[CommandHandler("cancel", handlers.cancel_command)],
+        allow_reentry=True,
     )
 
     application.add_handler(conv_handler)
+
+    # Add debug handler to see all messages
+    async def debug_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        logger.info(f"🔍 Unhandled update: {update}")
+
+    application.add_handler(MessageHandler(filters.ALL, debug_handler))
 
     # Add other command handlers (help, cancel)
     application.add_handler(CommandHandler("help", handlers.help_command))
