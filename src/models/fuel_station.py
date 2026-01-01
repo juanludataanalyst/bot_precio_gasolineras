@@ -9,7 +9,7 @@ class FuelType(str, Enum):
     GASOLEO_B = "Gasóleo B"
     GASOLEO_PREMIUM = "Gasóleo Premium"
     BIOETANOL = "Bioetanol"
-    BIODIESEL = "Biodisel"
+    BIODIESEL = "Biodiesel"
     GASES_LICUADOS = "Gases Licuados del Petróleo"
     GAS_NATURAL = "Gas Natural Comprimido"
     GAS_NATURAL_LICUADO = "Gas Natural Licuado"
@@ -25,16 +25,10 @@ class FuelStation(BaseModel):
     longitud: float = Field(ge=-180, le=180)
     precios: Dict[FuelType, float]
 
-    @field_validator('latitud')
+    @field_validator('precios')
     @classmethod
-    def validate_latitude(cls, v):
-        if not -90 <= v <= 90:
-            raise ValueError('Latitud must be between -90 and 90')
-        return v
-
-    @field_validator('longitud')
-    @classmethod
-    def validate_longitude(cls, v):
-        if not -180 <= v <= 180:
-            raise ValueError('Longitud must be between -180 and 180')
+    def validate_prices_non_negative(cls, v):
+        for fuel_type, price in v.items():
+            if price < 0:
+                raise ValueError(f'Price for {fuel_type} cannot be negative: {price}')
         return v
