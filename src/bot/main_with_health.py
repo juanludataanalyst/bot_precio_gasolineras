@@ -1,12 +1,13 @@
 import logging
 import os
 import asyncio
+import threading
+import time
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
 from src.bot import handlers, conversation
 from aiohttp import web
-from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -27,29 +28,44 @@ async def root(request):
     """Root endpoint"""
     return web.Response(text="Bot is running", status=200)
 
-async def start_web_server():
-    """Start a simple web server for health checks"""
-    app = web.Application()
-    app.router.add_get("/", root)
-    app.router.add_get("/health", health_check)
-
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
-    await site.start()
-    logger.info(f"Web server started on port {PORT}")
-
-    # Keep the runner alive
-    return runner
-
-def run_bot():
-    """Run the Telegram bot (blocking)"""
-    # Create a new event loop for this thread
-    import asyncio
+def start_web_server_sync():
+    """Start web server in a separate thread synchronously"""
+    # Create new event loop for this thread
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    # Create the application
+    async def run_server():
+        app = web.Application()
+        app.router.add_get("/", root)
+        app.router.add_get("/health", health_check)
+
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', PORT)
+        await site.start()
+        logger.info(f"Web server started on port {PORT}")
+
+        # Keep the server running
+        try:
+            while True:
+                await asyncio.sleep(3600)
+        except asyncio.CancelledError:
+            await runner.cleanup()
+
+    # Run the server
+    loop.run_until_complete(run_server())
+
+def main():
+    """Run the bot in main thread with web server in background"""
+    # Start web server in a separate thread
+    logger.info("Starting web server in background thread...")
+    web_thread = threading.Thread(target=start_web_server_sync, daemon=True)
+    web_thread.start()
+
+    # Give web server time to start
+    time.sleep(2)
+
+    # Create the bot application
     application = Application.builder().token(TOKEN).build()
 
     # Add conversation handler (includes /start as entry_point)
@@ -81,42 +97,14 @@ def run_bot():
     # Add other command handlers (help, cancel)
     application.add_handler(CommandHandler("help", handlers.help_command))
 
-    # Start the bot (blocking call)
+    logger.info("✅ Bot and web server are running")
+
+    # Start the bot (this is blocking and runs in main thread)
     logger.info("Starting bot...")
     application.run_polling(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES
     )
 
-async def main():
-    """Run both the web server and the bot"""
-    try:
-        # Start the web server
-        web_runner = await start_web_server()
-
-        # Start the bot in a separate thread
-        logger.info("Starting bot in background thread...")
-        import threading
-        bot_thread = threading.Thread(target=run_bot, daemon=True)
-        bot_thread.start()
-
-        logger.info("✅ Bot and web server are running")
-
-        # Keep the web server alive
-        try:
-            # Just keep the event loop alive
-            while True:
-                await asyncio.sleep(3600)  # Sleep for 1 hour at a time
-        except (KeyboardInterrupt, SystemExit):
-            logger.info("Received shutdown signal")
-        finally:
-            # Cleanup
-            logger.info("Shutting down...")
-            await web_runner.cleanup()
-
-    except Exception as e:
-        logger.error(f"Error starting application: {e}")
-        raise
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
