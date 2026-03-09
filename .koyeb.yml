@@ -1,0 +1,23 @@
+name: bot-precio-gasolineras
+regions:
+  - was
+
+services:
+  - name: bot-telegram
+    instance_type: nano
+    ports:
+      - port: 8000
+        protocol: HTTP
+    env:
+      - name: TELEGRAM_BOT_TOKEN
+        value: "${TELEGRAM_BOT_TOKEN}"
+      - name: PORT
+        value: "8000"
+    dockerfile: Dockerfile
+    health_check:
+      http:
+        port: 8000
+        path: /
+        interval: 30s
+        timeout: 5s
+        restart_limit: 3
