@@ -44,7 +44,12 @@ async def start_web_server():
 
 def run_bot():
     """Run the Telegram bot (blocking)"""
-    """Start the Telegram bot"""
+    # Create a new event loop for this thread
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # Create the application
     application = Application.builder().token(TOKEN).build()
 
     # Add conversation handler (includes /start as entry_point)
