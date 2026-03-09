@@ -26,5 +26,5 @@ USER appuser
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the bot
-CMD ["python", "-m", "src.bot.main"]
+# Run the bot with health check
+CMD ["python", "-m", "src.bot.main_with_health"]
