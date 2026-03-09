@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
 from src.bot import handlers, conversation
 from aiohttp import web
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -37,9 +38,12 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', PORT)
     await site.start()
     logger.info(f"Web server started on port {PORT}")
+
+    # Keep the runner alive
     return runner
 
-async def start_bot():
+def run_bot():
+    """Run the Telegram bot (blocking)"""
     """Start the Telegram bot"""
     application = Application.builder().token(TOKEN).build()
 
@@ -72,16 +76,12 @@ async def start_bot():
     # Add other command handlers (help, cancel)
     application.add_handler(CommandHandler("help", handlers.help_command))
 
-    # Start the bot
+    # Start the bot (blocking call)
     logger.info("Starting bot...")
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling(
+    application.run_polling(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES
     )
-
-    return application
 
 async def main():
     """Run both the web server and the bot"""
@@ -89,22 +89,24 @@ async def main():
         # Start the web server
         web_runner = await start_web_server()
 
-        # Start the bot
-        bot_application = await start_bot()
+        # Start the bot in a separate thread
+        logger.info("Starting bot in background thread...")
+        import threading
+        bot_thread = threading.Thread(target=run_bot, daemon=True)
+        bot_thread.start()
 
         logger.info("✅ Bot and web server are running")
 
-        # Keep the application running
+        # Keep the web server alive
         try:
-            await asyncio.Event().wait()  # Run forever
+            # Just keep the event loop alive
+            while True:
+                await asyncio.sleep(3600)  # Sleep for 1 hour at a time
         except (KeyboardInterrupt, SystemExit):
             logger.info("Received shutdown signal")
         finally:
             # Cleanup
             logger.info("Shutting down...")
-            await bot_application.updater.stop()
-            await bot_application.stop()
-            await bot_application.shutdown()
             await web_runner.cleanup()
 
     except Exception as e:
