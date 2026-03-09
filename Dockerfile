@@ -20,5 +20,5 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the bot with health check
-CMD ["python", "-m", "src.bot.main_with_health"]
+# Run the bot with health check (simple approach)
+CMD ["python", "health_server.py"]

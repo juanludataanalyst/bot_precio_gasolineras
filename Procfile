@@ -1,2 +1,2 @@
-worker: python -m src.bot.main_with_health
+worker: python health_server.py
 release: python -c "print('Bot is ready')"
