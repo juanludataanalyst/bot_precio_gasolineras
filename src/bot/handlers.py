@@ -4,7 +4,9 @@ from src.bot import conversation
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation and ask for location"""
-    logger.info(f"🎯 start_command called! Chat ID: {update.effective_chat.id}, Message: {update.effective_message.text}")
+    chat_id = update.effective_chat.id if update.effective_chat else "Unknown"
+    message_text = update.effective_message.text if update.effective_message else "None"
+    logger.info(f"🎯 start_command called! Chat ID: {chat_id}, Message: {message_text}")
 
     try:
         await update.message.reply_text(
