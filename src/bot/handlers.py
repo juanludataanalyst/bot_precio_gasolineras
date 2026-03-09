@@ -4,14 +4,21 @@ from src.bot import conversation
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation and ask for location"""
-    await update.message.reply_text(
-        "👋 ¡Hola! Soy el bot de precios de gasolineras.\n\n"
-        "Para encontrar las gasolineras más baratas cerca de ti, "
-        "necesito que me compartas tu ubicación.\n\n"
-        "📍 Pulsa el clip 📎 y selecciona 'Ubicación' o usa el botón de ubicación.",
-        reply_markup=get_location_keyboard()
-    )
-    return conversation.LOCATION
+    logger.info(f"🎯 start_command called! Chat ID: {update.effective_chat.id}, Message: {update.effective_message.text}")
+
+    try:
+        await update.message.reply_text(
+            "👋 ¡Hola! Soy el bot de precios de gasolineras.\n\n"
+            "Para encontrar las gasolineras más baratas cerca de ti, "
+            "necesito que me compartas tu ubicación.\n\n"
+            "📍 Pulsa el clip 📎 y selecciona 'Ubicación' o usa el botón de ubicación.",
+            reply_markup=get_location_keyboard()
+        )
+        logger.info("✅ Reply sent successfully")
+        return conversation.LOCATION
+    except Exception as e:
+        logger.error(f"❌ Error in start_command: {e}")
+        raise
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send help message"""

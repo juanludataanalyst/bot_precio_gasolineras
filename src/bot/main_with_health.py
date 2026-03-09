@@ -88,11 +88,15 @@ def main():
 
     application.add_handler(conv_handler)
 
-    # Add debug handler to see all messages
-    async def debug_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logger.info(f"🔍 Unhandled update: {update}")
+    # Add other command handlers (help, cancel)
+    application.add_handler(CommandHandler("help", handlers.help_command))
+    application.add_handler(CommandHandler("cancel", handlers.cancel_command))
 
-    application.add_handler(MessageHandler(filters.ALL, debug_handler))
+    # Add error handler to catch exceptions
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+        logger.error(f"Exception while handling an update: {context.error}")
+
+    application.add_error_handler(error_handler)
 
     # Add other command handlers (help, cancel)
     application.add_handler(CommandHandler("help", handlers.help_command))
