@@ -43,6 +43,8 @@ async def fuel_type_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     fuel_type = query.data.replace("fuel_", "")
     context.user_data['fuel_type'] = fuel_type
 
+    logger.info(f"⛽ Fuel type selected: {fuel_type}")
+
     await query.edit_message_text(
         f"✅ Combustible seleccionado: *{fuel_type}*\n\n"
         "📏 Ahora indica el radio de búsqueda en kilómetros.\n\n"
@@ -55,6 +57,8 @@ async def fuel_type_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def radius_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle radius input and find cheapest stations"""
     radius_text = update.message.text.strip()
+
+    logger.info(f"📏 Radius received: {radius_text}")
 
     try:
         radius = float(radius_text)
@@ -72,6 +76,8 @@ async def radius_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     lat = context.user_data.get('latitude')
     lon = context.user_data.get('longitude')
     fuel_type_str = context.user_data.get('fuel_type')
+
+    logger.info(f"📍 Search parameters - Lat: {lat}, Lon: {lon}, Fuel: {fuel_type_str}, Radius: {radius}")
 
     if not all([lat, lon, fuel_type_str]):
         await update.message.reply_text(
@@ -92,11 +98,16 @@ async def radius_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "Esto puede tardar unos segundos."
     )
 
+    logger.info("🔍 Starting search...")
+
     try:
         api_client = MinistryAPIClient()
+        logger.info("📡 Fetching all stations from Ministry API...")
         all_stations = await api_client.get_all_stations()
+        logger.info(f"✅ Fetched {len(all_stations)} stations")
 
         finder = FuelStationFinder()
+        logger.info("🔎 Finding cheapest stations...")
         stations = await finder.find_cheapest(
             stations=all_stations,
             user_lat=lat,
@@ -104,6 +115,7 @@ async def radius_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             radius_km=radius,
             fuel_type=fuel_type
         )
+        logger.info(f"✅ Found {len(stations)} stations")
 
         await status_message.delete()
 
@@ -116,8 +128,10 @@ async def radius_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         else:
             await send_results(update, stations, fuel_type)
+            logger.info("✅ Results sent successfully")
 
     except Exception as e:
+        logger.error(f"❌ Error in search: {e}", exc_info=True)
         await status_message.delete()
         await update.message.reply_text(
             f"❌ Error al buscar gasolineras: {str(e)}\n\n"
