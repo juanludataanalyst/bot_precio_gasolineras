@@ -96,6 +96,39 @@ class MinistryAPIClient:
                 if hasattr(e, '__cause__') and e.__cause__:
                     print(f"🔍 Root cause: {type(e.__cause__).__name__}: {str(e.__cause__)}")
 
+                # Network diagnostics
+                print()
+                print("🔬 Running network diagnostics...")
+                try:
+                    # Extract hostname from URL
+                    from urllib.parse import urlparse
+                    parsed_url = urlparse(MINISTRY_API_URL)
+                    hostname = parsed_url.hostname
+
+                    # Test DNS resolution
+                    loop = asyncio.get_event_loop()
+                    try:
+                        result = await loop.getaddrinfo(hostname, 443, proto=socket.IPPROTO_TCP)
+                        ips = [addr[4][0] for addr in result]
+                        print(f"✅ DNS resolution works: {hostname} → {set(ips)}")
+                    except Exception as dns_error:
+                        print(f"❌ DNS resolution failed: {dns_error}")
+
+                    # Test TCP connection
+                    try:
+                        reader, writer = await asyncio.wait_for(
+                            asyncio.open_connection(hostname, 443),
+                            timeout=5.0
+                        )
+                        print(f"✅ TCP connection to {hostname}:443 successful")
+                        writer.close()
+                        await writer.wait_closed()
+                    except Exception as tcp_error:
+                        print(f"❌ TCP connection failed: {type(tcp_error).__name__}: {tcp_error}")
+
+                except Exception as diag_error:
+                    print(f"⚠️ Diagnostics failed: {diag_error}")
+
                 if attempt < MAX_RETRIES - 1:
                     print(f"⏳ Waiting {retry_delay:.1f}s before retry...")
                     print()
