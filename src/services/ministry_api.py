@@ -62,15 +62,14 @@ class MinistryAPIClient:
                             print(f"✅ JSON parsed successfully")
                 else:
                     print(f"📡 Attempt {attempt + 1}/{MAX_RETRIES}: Using provided HTTP client")
-                    response = await self._http_client.get(MINISTRY_API_URL)
+                    async with await self._http_client.get(MINISTRY_API_URL) as response:
+                        elapsed = time.time() - start_time
+                        print(f"✅ Response received in {elapsed:.2f}s")
+                        print(f"📊 Status: {response.status}")
 
-                    elapsed = time.time() - start_time
-                    print(f"✅ Response received in {elapsed:.2f}s")
-                    print(f"📊 Status: {response.status_code}")
-
-                    response.raise_for_status()
-                    data = response.json()
-                    print(f"✅ JSON parsed successfully")
+                        response.raise_for_status()
+                        data = await response.json()
+                        print(f"✅ JSON parsed successfully")
 
                 if attempt > 0:
                     print(f"🎉 Success on retry {attempt + 1}!")
@@ -80,7 +79,7 @@ class MinistryAPIClient:
 
                 return stations
 
-            except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
+            except (aiohttp.ClientError, asyncio.TimeoutError, ConnectionError) as e:
                 elapsed = time.time() - start_time
                 last_error = e
                 retry_delay = INITIAL_RETRY_DELAY * (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
@@ -146,15 +145,14 @@ class MinistryAPIClient:
                     print("💀" * 30)
                     print()
 
-            except httpx.HTTPStatusError as e:
+            except aiohttp.ClientResponseError as e:
                 elapsed = time.time() - start_time
                 print()
                 print("❌" * 30)
                 print(f"❌ HTTP STATUS ERROR (not retrying)")
                 print("❌" * 30)
                 print(f"⏱️ Time to error: {elapsed:.2f}s")
-                print(f"📊 Status code: {e.response.status_code}")
-                print(f"📝 Response: {e.response.text[:500]}")
+                print(f"📊 Status code: {e.status}")
                 print()
                 raise
 
