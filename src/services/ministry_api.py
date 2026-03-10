@@ -37,15 +37,14 @@ class MinistryAPIClient:
             try:
                 if self._http_client is None:
                     print(f"📡 Attempt {attempt + 1}/{MAX_RETRIES}: Creating new HTTP client")
-                    print(f"🔧 Using HTTP/1.1 and relaxed SSL for government server compatibility")
+                    print(f"⚠️ SSL verification DISABLED (government server compatibility)")
 
-                    # Many government servers have issues with HTTP/2 and modern TLS
-                    # Using HTTP/1.1 explicitly often fixes connection issues
+                    # Disable SSL verification for government server compatibility
+                    # The Ministry server has certificate issues that prevent normal TLS handshake
                     async with httpx.AsyncClient(
                         timeout=60.0,
-                        http2=False,  # Force HTTP/1.1
-                        verify=True,  # Keep SSL verification for security
-                        follow_redirects=True
+                        http2=False,
+                        verify=False  # Disable SSL verification
                     ) as client:
                         print(f"🔗 HTTP client created successfully")
                         print(f"📨 Sending GET request...")
