@@ -1,4 +1,4 @@
-import httpx
+import aiohttp
 import asyncio
 import logging
 import time
@@ -14,7 +14,7 @@ INITIAL_RETRY_DELAY = 1.0  # seconds
 logger = logging.getLogger(__name__)
 
 class MinistryAPIClient:
-    def __init__(self, http_client: httpx.AsyncClient | None = None):
+    def __init__(self, http_client: aiohttp.ClientSession | None = None):
         self._http_client = http_client
 
     async def get_all_stations(self) -> List[FuelStation]:
@@ -36,32 +36,30 @@ class MinistryAPIClient:
 
             try:
                 if self._http_client is None:
-                    print(f"📡 Attempt {attempt + 1}/{MAX_RETRIES}: Creating new HTTP client")
-                    print(f"⚠️ SSL verification DISABLED (government server compatibility)")
+                    print(f"📡 Attempt {attempt + 1}/{MAX_RETRIES}: Creating HTTP client (aiohttp)")
+                    print(f"🔧 Using aiohttp with SSL disabled and timeout=60s")
 
-                    # Disable SSL verification for government server compatibility
-                    # The Ministry server has certificate issues that prevent normal TLS handshake
-                    async with httpx.AsyncClient(
-                        timeout=60.0,
-                        http2=False,
-                        verify=False  # Disable SSL verification
-                    ) as client:
-                        print(f"🔗 HTTP client created successfully")
+                    timeout = aiohttp.ClientTimeout(total=60)
+                    connector = aiohttp.TCPConnector(ssl=False)
+
+                    async with aiohttp.ClientSession(
+                        timeout=timeout,
+                        connector=connector
+                    ) as session:
+                        print(f"🔗 Session created successfully")
                         print(f"📨 Sending GET request...")
 
-                        response = await client.get(MINISTRY_API_URL)
+                        async with session.get(MINISTRY_API_URL) as response:
+                            elapsed = time.time() - start_time
+                            print(f"✅ Response received in {elapsed:.2f}s")
+                            print(f"📊 Status: {response.status}")
+                            print(f"📏 Size: {len(response.content)} bytes")
 
-                        elapsed = time.time() - start_time
-                        print(f"✅ Response received in {elapsed:.2f}s")
-                        print(f"📊 Status: {response.status_code}")
-                        print(f"📏 Size: {len(response.content):,} bytes")
-                        print(f"🌐 HTTP Version: {response.http_version}")
+                            response.raise_for_status()
 
-                        response.raise_for_status()
-
-                        print(f"📦 Parsing JSON response...")
-                        data = response.json()
-                        print(f"✅ JSON parsed successfully")
+                            print(f"📦 Parsing JSON response...")
+                            data = await response.json()
+                            print(f"✅ JSON parsed successfully")
                 else:
                     print(f"📡 Attempt {attempt + 1}/{MAX_RETRIES}: Using provided HTTP client")
                     response = await self._http_client.get(MINISTRY_API_URL)
