@@ -5,6 +5,7 @@ import ssl
 import logging
 import time
 import os
+import asyncio
 from typing import List
 from src.models.fuel_station import FuelStation, FuelType
 
